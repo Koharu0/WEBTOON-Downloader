@@ -1,0 +1,23 @@
+﻿<Window x:Class="WEBTOON.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:WEBTOON"
+        mc:Ignorable="d"
+        Title="네이버웹툰 다운로더 [dev]" Height="450" Width="800">
+    <Grid>
+        <Button x:Name="btnTest" Content="Button" HorizontalAlignment="Left" Margin="203,167,0,0" VerticalAlignment="Top" Click="btnTest_Click"/>
+        <TextBox x:Name="tboxSearch" HorizontalAlignment="Left" Margin="95,31,0,0" TextWrapping="Wrap" Text="제목/작가로 검색할 수 있습니다." VerticalAlignment="Top" Width="237"/>
+        <ListView x:Name="SearchListView" HorizontalAlignment="Left" VerticalAlignment="Top" Height="100" Width="475" Margin="10,50,0,0" SelectionChanged="SearchListView_SelectionChanged" HorizontalContentAlignment="Center">
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn Header="제목" DisplayMemberBinding="{Binding TitleName}" Width="150"/>
+                    <GridViewColumn Header="작가" DisplayMemberBinding="{Binding DisplayAuthor}" Width="200"/>
+                </GridView>
+            </ListView.View>
+        </ListView>
+        <TextBox x:Name="tboxNo" HorizontalAlignment="Left" Margin="546,125,0,0" TextWrapping="Wrap" Text="이곳에 다운로드할 화를 입력하세요. [숫자만 입력]" VerticalAlignment="Top" Width="120"/>
+        <TextBox x:Name="tboxPath" HorizontalAlignment="Left" Margin="371,187,0,0" TextWrapping="Wrap" Text="이곳에 파일을 저장할 폴더의 경로를 입력하세요." VerticalAlignment="Top" Width="120"/>
+    </Grid>
+</Window>
