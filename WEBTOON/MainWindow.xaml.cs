@@ -14,6 +14,7 @@ using System.Windows.Shapes;
 using Newtonsoft.Json.Linq;
 using HtmlAgilityPack;
 using System.IO;
+using System;
 
 namespace WEBTOON
 {
@@ -26,7 +27,6 @@ namespace WEBTOON
         {
             InitializeComponent();
         }
-        public string urlX;
 
         public async Task Search()
         {
@@ -58,10 +58,10 @@ namespace WEBTOON
             SearchListView.ItemsSource = webtoonList;
         }
 
-        public void btnTest_Click(object sender, RoutedEventArgs e)
+        public void btnSearch_Click(object sender, RoutedEventArgs e)
         {
-            //GetImages();
             Search();
+
         }
 
         public class searchList
@@ -71,32 +71,40 @@ namespace WEBTOON
             public string DisplayAuthor { get; set; }
         }
 
-        private void SearchListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        public class Save
+        {
+            public static void Dir(string path, string title, int no, string url) //경로, 제목, 화, URL
+            {
+                string pathA = path + "\\" + title + "\\" + no + "화";
+                // Try to create the directory.
+                DirectoryInfo di = Directory.CreateDirectory(pathA);
+                MainWindow mainWindow = new MainWindow();
+                mainWindow.GetImages(pathA, url);
+            }
+        }
+        private void SearchListView_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
             if (SearchListView.SelectedItem is searchList selectedWebtoon)
             {
+                if (tboxNo.Text == "")
+                {
+                    MessageBox.Show("저장할 화를 입력해주세요.");
+                    return;
+                }
                 int no = int.Parse(tboxNo.Text);
                 MessageBox.Show($"선택된 웹툰: {selectedWebtoon.TitleName} - {selectedWebtoon.DisplayAuthor}");
                 string url = $"https://comic.naver.com/webtoon/detail?titleId={selectedWebtoon.TitleId}&no={no}";
-                urlX = url.ToString();
-                Trace.WriteLine(urlX);
-                GetImages();
+                Save.Dir(tboxPath.Text, selectedWebtoon.TitleName, no, url); //경로, 제목, 화, URL
             }
         }
 
-        public async Task GetImages()
+        public async Task GetImages(string pathA, string url)
         {
-            string downloadPath = tboxPath.Text;
-
-            if (!Directory.Exists(downloadPath))
-            {
-                Directory.CreateDirectory(downloadPath);
-            }
-
+            string downloadPath = pathA;
             var httpClient = new HttpClient();
             httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla");
-
-            var html = await httpClient.GetStringAsync(urlX);
+            Trace.WriteLine(url);
+            var html = await httpClient.GetStringAsync(url);
 
             var htmlDoc = new HtmlDocument();
             htmlDoc.LoadHtml(html);
@@ -145,5 +153,20 @@ namespace WEBTOON
             }
             MessageBox.Show("다운로드 완료");
         }
+
+        private void btnPath_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new Microsoft.Win32.OpenFolderDialog();
+            dialog.Title = "웹툰이 저장될 폴더를 선택하세요.";
+            dialog.ShowDialog();
+            tboxPath.Text = dialog.FolderName;
+        }
+
+        private void tboxSearch_GotFocus(object sender, RoutedEventArgs e)
+        {
+            tboxSearch.Text = "";
+        }
+
+        
     }
 }
