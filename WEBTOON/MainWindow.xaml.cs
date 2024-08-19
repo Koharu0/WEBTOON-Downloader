@@ -15,6 +15,8 @@ using Newtonsoft.Json.Linq;
 using HtmlAgilityPack;
 using System.IO;
 using System;
+using System.Drawing;
+
 
 namespace WEBTOON
 {
@@ -61,7 +63,12 @@ namespace WEBTOON
 
         public void btnSearch_Click(object sender, RoutedEventArgs e)
         {
-            Search();
+            if (string.IsNullOrWhiteSpace(tboxSearch.Text) || tboxSearch.Text == "제목/작가로 검색할 수 있습니다.")
+            {
+                MessageBox.Show("검색어를 입력해 주세요.");
+                return;
+            }
+                Search();
 
         }
 
@@ -82,16 +89,83 @@ namespace WEBTOON
             }
         }
 
+        /* private void CombineImages(string[] imagePaths, string outputFilePath)
+        {
+            // 모든 이미지를 불러오기
+            List<Bitmap> images = new List<Bitmap>();
+            foreach (var imagePath in imagePaths)
+            {
+                images.Add(new Bitmap(imagePath));
+            }
+
+            // 최종 이미지 크기 계산
+            int width = images.Max(img => img.Width); // 가장 넓은 이미지의 폭으로 설정
+            int height = images.Sum(img => img.Height); // 모든 이미지의 높이를 합산
+
+            // 새로운 비트맵 생성
+            using (var finalImage = new Bitmap(width, height))
+            {
+                using (Graphics g = Graphics.FromImage(finalImage))
+                {
+                    int offset = 0;
+                    foreach (var img in images)
+                    {
+                        g.DrawImage(img, new System.Drawing.Rectangle(0, offset, img.Width, img.Height));
+                        offset += img.Height;
+                    }
+                }
+
+                // 최종 이미지 저장
+                finalImage.Save(outputFilePath, System.Drawing.Imaging.ImageFormat.Jpeg);
+            }
+
+            // 메모리 해제
+            foreach (var img in images)
+            {
+                img.Dispose();
+            }
+        }
+        */
+
+        private void CombineImages(Bitmap[] images, string outputFilePath)
+        {
+            // 최종 이미지 크기 계산
+            int width = images.Max(img => img.Width); // 가장 넓은 이미지의 폭으로 설정
+            int height = images.Sum(img => img.Height); // 모든 이미지의 높이를 합산
+
+            // 새로운 비트맵 생성
+            using (var finalImage = new Bitmap(width, height))
+            {
+                using (Graphics g = Graphics.FromImage(finalImage))
+                {
+                    int offset = 0;
+                    foreach (var img in images)
+                    {
+                        g.DrawImage(img, new System.Drawing.Rectangle(0, offset, img.Width, img.Height));
+                        offset += img.Height;
+                    }
+                }
+
+                // 최종 이미지 저장
+                finalImage.Save(outputFilePath, System.Drawing.Imaging.ImageFormat.Jpeg);
+            }
+
+            // 메모리 해제
+            foreach (var img in images)
+            {
+                img.Dispose();
+            }
+        }
 
         public class Save
         {
             public static void Dir(string path, string title, int no, string url) //경로, 제목, 화, URL
             {
-                string pathA = path + "\\" + title + "\\" + no + "화";
+                string pathA = path + "\\" + title;
                 // Try to create the directory.
                 DirectoryInfo di = Directory.CreateDirectory(pathA);
                 MainWindow mainWindow = new MainWindow();
-                mainWindow.GetImages(pathA, url);
+                mainWindow.GetImages(pathA, url, no);
             }
         }
         private void SearchListView_PreviewMouseDown(object sender, MouseButtonEventArgs e)
@@ -102,7 +176,12 @@ namespace WEBTOON
                 string pathB = tboxPath.Text;
                 if (string.IsNullOrWhiteSpace(noText))
                 {
-                    MessageBox.Show("저장할 화를 입력해주세요.");
+                    MessageBox.Show("저장할 화가 입력되어 있지 않습니다.");
+                    return;
+                }
+                if (pathB == "설정되지 않음")
+                {
+                    MessageBox.Show("이미지를 저장할 경로가 설정되지 않았습니다.");
                     return;
                 }
 
@@ -137,12 +216,11 @@ namespace WEBTOON
 
         private void DownloadWebtoon(searchList selectedWebtoon, int no, string PathB)
         {
-            MessageBox.Show("다운로드를 시작합니다.");
             string url = $"https://comic.naver.com/webtoon/detail?titleId={selectedWebtoon.TitleId}&no={no}";
             Save.Dir(PathB, selectedWebtoon.TitleName, no, url); // 경로, 제목, 화, URL
         }
 
-        public async Task GetImages(string pathA, string url)
+        /* public async Task GetImages(string pathA, string url)
         {
             string downloadPath = pathA;
             var httpClient = new HttpClient();
@@ -153,6 +231,7 @@ namespace WEBTOON
             htmlDoc.LoadHtml(html);
 
             List<string> imageUrls = new List<string>();
+            List<string> downloadedImagePaths = new List<string>();
 
             var comicViewArea = htmlDoc.DocumentNode.SelectSingleNode("//div[@id='comic_view_area']");
 
@@ -175,6 +254,7 @@ namespace WEBTOON
 
                             string fileName = $"{imageIndex}.jpg";
                             string filePath = System.IO.Path.Combine(downloadPath, fileName);
+                            downloadedImagePaths.Add(filePath);
 
                             try
                             {
@@ -192,9 +272,77 @@ namespace WEBTOON
                             Trace.WriteLine($"Skipped image: {src} (contains 'white')");
                         }
                     }
+
+                    // 이미지 모두 다운로드 후 합치기
+                    if (downloadedImagePaths.Count > 0)
+                    {
+                        string outputFilePath = System.IO.Path.Combine(downloadPath, "combined.jpg");
+                        CombineImages(downloadedImagePaths.ToArray(), outputFilePath);
+                        MessageBox.Show($"모든 이미지를 합친 파일이 저장되었습니다: {outputFilePath}");
+                    }
                 }
             }
             MessageBox.Show("다운로드 완료");
+        }
+        */
+
+        public async Task GetImages(string pathA, string url, int no)
+        {
+            var httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla");
+            var html = await httpClient.GetStringAsync(url);
+
+            var htmlDoc = new HtmlDocument();
+            htmlDoc.LoadHtml(html);
+
+            List<Bitmap> images = new List<Bitmap>();
+
+            var comicViewArea = htmlDoc.DocumentNode.SelectSingleNode("//div[@id='comic_view_area']");
+
+            if (comicViewArea != null)
+            {
+                var imgNodes = comicViewArea.SelectNodes(".//img");
+
+                if (imgNodes != null)
+                {
+                    foreach (var imgNode in imgNodes)
+                    {
+                        string src = imgNode.GetAttributeValue("src", null);
+
+                        if (!string.IsNullOrEmpty(src) && !src.Contains("white"))
+                        {
+                            Trace.WriteLine($"Found image: {src}");
+
+                            try
+                            {
+                                // 이미지 데이터를 메모리로 다운로드
+                                byte[] imageBytes = await httpClient.GetByteArrayAsync(src);
+                                using (var ms = new MemoryStream(imageBytes))
+                                {
+                                    Bitmap bitmap = new Bitmap(ms);
+                                    images.Add(bitmap);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                MessageBox.Show($"Failed to download {src}: {ex.Message}");
+                            }
+                        }
+                        else
+                        {
+                            Trace.WriteLine($"Skipped image: {src} (contains 'white')");
+                        }
+                    }
+
+                    // 이미지 결합 및 저장
+                    if (images.Count > 0)
+                    {
+                        string outputFilePath = System.IO.Path.Combine(pathA, $"{no}화.jpg");
+                        CombineImages(images.ToArray(), outputFilePath);
+                    }
+                }
+            }
+            //MessageBox.Show("다운로드 완료");
         }
 
         private void btnPath_Click(object sender, RoutedEventArgs e)
@@ -209,7 +357,5 @@ namespace WEBTOON
         {
             tboxSearch.Text = "";
         }
-
-        
     }
 }
