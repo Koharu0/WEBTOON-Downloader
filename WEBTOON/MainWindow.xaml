@@ -9,14 +9,43 @@
     <Grid>
         <Button x:Name="btnSearch" Content="검색" HorizontalAlignment="Left" Margin="334,29,0,0" VerticalAlignment="Top" Click="btnSearch_Click"/>
         <TextBox x:Name="tboxSearch" HorizontalAlignment="Left" Margin="95,31,0,0" TextWrapping="Wrap" Text="제목/작가로 검색할 수 있습니다." VerticalAlignment="Top" Width="237" GotFocus="tboxSearch_GotFocus"/>
-        <ListView x:Name="SearchListView" HorizontalAlignment="Left" VerticalAlignment="Top" Height="100" Width="475" Margin="10,50,0,0" HorizontalContentAlignment="Center" PreviewMouseDown="SearchListView_PreviewMouseDown">
+        <ListView x:Name="SearchListView" HorizontalAlignment="Left" VerticalAlignment="Top" Height="100" Width="612" Margin="10,50,0,0" PreviewMouseDown="SearchListView_PreviewMouseDown">
+            <ListView.ItemContainerStyle>
+                <Style TargetType="ListViewItem">
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                </Style>
+            </ListView.ItemContainerStyle>
             <ListView.View>
                 <GridView>
-                    <GridViewColumn Header="제목" DisplayMemberBinding="{Binding TitleName}" Width="300"/>
-                    <GridViewColumn Header="작가" DisplayMemberBinding="{Binding DisplayAuthor}" Width="200"/>
+                    <GridViewColumn Header="제목" Width="250">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding TitleName}" TextAlignment="Center"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+
+                    <GridViewColumn Header="작가" Width="200">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding DisplayAuthor}" TextAlignment="Center"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+
+                    <GridViewColumn Header="총 회차" Width="107">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding DisplayArticleTotalCount}" TextAlignment="Center"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
                 </GridView>
             </ListView.View>
         </ListView>
+
+
+
         <TextBox x:Name="tboxNo" HorizontalAlignment="Left" Margin="71,188,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="33"/>
         <TextBox x:Name="tboxPath" HorizontalAlignment="Left" Margin="136,161,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="211" IsReadOnly="True"/>
         <Label x:Name="labSearch" Content="검색" HorizontalAlignment="Left" Margin="56,27,0,0" VerticalAlignment="Top"/>

@@ -47,12 +47,13 @@ namespace WEBTOON
                 int titleId = (int)item["titleId"];
                 string titleName = (string)item["titleName"];
                 string displayAuthor = (string)item["displayAuthor"];
-                Trace.WriteLine($"Title ID: {titleId}, Title Name: {titleName}, Display Author: {displayAuthor}");
+                int articleTotalCount = (int)item["articleTotalCount"];
                 webtoonList.Add(new searchList
                 {
                     TitleId = titleId,
                     TitleName = titleName,
-                    DisplayAuthor = displayAuthor
+                    DisplayAuthor = displayAuthor,
+                    ArticleTotalCount = articleTotalCount
                 });
             }
             SearchListView.ItemsSource = webtoonList;
@@ -69,7 +70,18 @@ namespace WEBTOON
             public int TitleId { get; set; }
             public string TitleName { get; set; }
             public string DisplayAuthor { get; set; }
+            public int ArticleTotalCount { get; set; }
+
+            // 새로운 속성 추가
+            public string DisplayArticleTotalCount
+            {
+                get
+                {
+                    return $"총 {ArticleTotalCount}화";
+                }
+            }
         }
+
 
         public class Save
         {
@@ -86,16 +98,48 @@ namespace WEBTOON
         {
             if (SearchListView.SelectedItem is searchList selectedWebtoon)
             {
-                if (tboxNo.Text == "")
+                string noText = tboxNo.Text;
+                string pathB = tboxPath.Text;
+                if (string.IsNullOrWhiteSpace(noText))
                 {
                     MessageBox.Show("저장할 화를 입력해주세요.");
                     return;
                 }
-                int no = int.Parse(tboxNo.Text);
-                MessageBox.Show($"선택된 웹툰: {selectedWebtoon.TitleName} - {selectedWebtoon.DisplayAuthor}");
-                string url = $"https://comic.naver.com/webtoon/detail?titleId={selectedWebtoon.TitleId}&no={no}";
-                Save.Dir(tboxPath.Text, selectedWebtoon.TitleName, no, url); //경로, 제목, 화, URL
+
+                // 화 범위를 처리하는 로직 추가
+                if (noText.Contains("~"))
+                {
+                    var parts = noText.Split('~');
+                    if (parts.Length == 2 && int.TryParse(parts[0], out int startNo) && int.TryParse(parts[1], out int endNo))
+                    {
+                        // 입력된 범위에 따라 여러 화 다운로드
+                        for (int no = startNo; no <= endNo; no++)
+                        {
+                            DownloadWebtoon(selectedWebtoon, no, pathB);
+                        }
+                    }
+                    else
+                    {
+                        MessageBox.Show("잘못된 화 범위입니다. 예: 1~8");
+                    }
+                }
+                else if (int.TryParse(noText, out int singleNo))
+                {
+                    // 단일 화 다운로드
+                    DownloadWebtoon(selectedWebtoon, singleNo, pathB);
+                }
+                else
+                {
+                    MessageBox.Show("잘못된 입력입니다. 숫자 또는 범위를 입력하세요. 예: 1 또는 1~8");
+                }
             }
+        }
+
+        private void DownloadWebtoon(searchList selectedWebtoon, int no, string PathB)
+        {
+            MessageBox.Show("다운로드를 시작합니다.");
+            string url = $"https://comic.naver.com/webtoon/detail?titleId={selectedWebtoon.TitleId}&no={no}";
+            Save.Dir(PathB, selectedWebtoon.TitleName, no, url); // 경로, 제목, 화, URL
         }
 
         public async Task GetImages(string pathA, string url)
@@ -103,7 +147,6 @@ namespace WEBTOON
             string downloadPath = pathA;
             var httpClient = new HttpClient();
             httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla");
-            Trace.WriteLine(url);
             var html = await httpClient.GetStringAsync(url);
 
             var htmlDoc = new HtmlDocument();
