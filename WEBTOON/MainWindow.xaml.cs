@@ -16,7 +16,9 @@ using HtmlAgilityPack;
 using System.IO;
 using System;
 using System.Drawing;
+using System.Globalization;
 
+using Path = System.IO.Path;
 
 namespace WEBTOON
 {
@@ -30,7 +32,7 @@ namespace WEBTOON
             InitializeComponent();
         }
 
-        public async Task Search()
+        public async Task Search() //웹 요청 및 파싱
         {
             string keyword = tboxSearch.Text;
             var client = new HttpClient();
@@ -41,35 +43,30 @@ namespace WEBTOON
             string jsonString = await response.Content.ReadAsStringAsync();
             JObject jsonObject = JObject.Parse(jsonString);
 
-            var webtoonResults = jsonObject["searchWebtoonResult"]["searchViewList"];
-            var webtoonList = new List<searchList>();
+            var webtoonResults = jsonObject["searchWebtoonResult"]["searchViewList"]; // 웹툰
+            var searchChallengeResults = jsonObject["searchChallengeResult"]["searchViewList"]; // 도전만화
+            var searchBestChallengeResults = jsonObject["searchBestChallengeResult"]["searchViewList"]; // 베스트도전
+            var comicResults = new JArray(webtoonResults.Concat(searchChallengeResults).Concat(searchBestChallengeResults)); // 웹툰 + 도전만화 + 베스트도전
 
-            foreach (var item in webtoonResults)
+            var comicResult = new List<searchList>();
+
+            foreach (var item in comicResults)
             {
                 int titleId = (int)item["titleId"];
                 string titleName = (string)item["titleName"];
                 string displayAuthor = (string)item["displayAuthor"];
                 int articleTotalCount = (int)item["articleTotalCount"];
-                webtoonList.Add(new searchList
+                string webtoonlevelcode = (string)item["webtoonLevelCode"];
+                comicResult.Add(new searchList
                 {
                     TitleId = titleId,
                     TitleName = titleName,
                     DisplayAuthor = displayAuthor,
-                    ArticleTotalCount = articleTotalCount
+                    ArticleTotalCount = articleTotalCount,
+                    WebtoonLevelCode = webtoonlevelcode
                 });
             }
-            SearchListView.ItemsSource = webtoonList;
-        }
-
-        public void btnSearch_Click(object sender, RoutedEventArgs e)
-        {
-            if (string.IsNullOrWhiteSpace(tboxSearch.Text) || tboxSearch.Text == "제목/작가로 검색할 수 있습니다.")
-            {
-                MessageBox.Show("검색어를 입력해 주세요.");
-                return;
-            }
-                Search();
-
+            SearchListView.ItemsSource = comicResult;
         }
 
         public class searchList
@@ -78,6 +75,7 @@ namespace WEBTOON
             public string TitleName { get; set; }
             public string DisplayAuthor { get; set; }
             public int ArticleTotalCount { get; set; }
+            public string WebtoonLevelCode { get; set; }
 
             // 새로운 속성 추가
             public string DisplayArticleTotalCount
@@ -87,129 +85,22 @@ namespace WEBTOON
                     return $"총 {ArticleTotalCount}화";
                 }
             }
-        }
-
-        /* private void CombineImages(string[] imagePaths, string outputFilePath)
-        {
-            // 모든 이미지를 불러오기
-            List<Bitmap> images = new List<Bitmap>();
-            foreach (var imagePath in imagePaths)
+            public string DisplayWebtoonLevelCode
             {
-                images.Add(new Bitmap(imagePath));
-            }
-
-            // 최종 이미지 크기 계산
-            int width = images.Max(img => img.Width); // 가장 넓은 이미지의 폭으로 설정
-            int height = images.Sum(img => img.Height); // 모든 이미지의 높이를 합산
-
-            // 새로운 비트맵 생성
-            using (var finalImage = new Bitmap(width, height))
-            {
-                using (Graphics g = Graphics.FromImage(finalImage))
+                get
                 {
-                    int offset = 0;
-                    foreach (var img in images)
+                    if (WebtoonLevelCode == "WEBTOON")
                     {
-                        g.DrawImage(img, new System.Drawing.Rectangle(0, offset, img.Width, img.Height));
-                        offset += img.Height;
+                        return $"웹툰";
                     }
-                }
-
-                // 최종 이미지 저장
-                finalImage.Save(outputFilePath, System.Drawing.Imaging.ImageFormat.Jpeg);
-            }
-
-            // 메모리 해제
-            foreach (var img in images)
-            {
-                img.Dispose();
-            }
-        }
-        */
-
-        private void CombineImages(Bitmap[] images, string outputFilePath)
-        {
-            // 최종 이미지 크기 계산
-            int width = images.Max(img => img.Width); // 가장 넓은 이미지의 폭으로 설정
-            int height = images.Sum(img => img.Height); // 모든 이미지의 높이를 합산
-
-            // 새로운 비트맵 생성
-            using (var finalImage = new Bitmap(width, height))
-            {
-                using (Graphics g = Graphics.FromImage(finalImage))
-                {
-                    int offset = 0;
-                    foreach (var img in images)
+                    if (WebtoonLevelCode == "CHALLENGE")
                     {
-                        g.DrawImage(img, new System.Drawing.Rectangle(0, offset, img.Width, img.Height));
-                        offset += img.Height;
+                        return $"도전만화";
                     }
-                }
-
-                // 최종 이미지 저장
-                finalImage.Save(outputFilePath, System.Drawing.Imaging.ImageFormat.Jpeg);
-            }
-
-            // 메모리 해제
-            foreach (var img in images)
-            {
-                img.Dispose();
-            }
-        }
-
-        public class Save
-        {
-            public static void Dir(string path, string title, int no, string url) //경로, 제목, 화, URL
-            {
-                string pathA = path + "\\" + title;
-                // Try to create the directory.
-                DirectoryInfo di = Directory.CreateDirectory(pathA);
-                MainWindow mainWindow = new MainWindow();
-                mainWindow.GetImages(pathA, url, no);
-            }
-        }
-        private void SearchListView_PreviewMouseDown(object sender, MouseButtonEventArgs e)
-        {
-            if (SearchListView.SelectedItem is searchList selectedWebtoon)
-            {
-                string noText = tboxNo.Text;
-                string pathB = tboxPath.Text;
-                if (string.IsNullOrWhiteSpace(noText))
-                {
-                    MessageBox.Show("저장할 화가 입력되어 있지 않습니다.");
-                    return;
-                }
-                if (pathB == "설정되지 않음")
-                {
-                    MessageBox.Show("이미지를 저장할 경로가 설정되지 않았습니다.");
-                    return;
-                }
-
-                // 화 범위를 처리하는 로직 추가
-                if (noText.Contains("~"))
-                {
-                    var parts = noText.Split('~');
-                    if (parts.Length == 2 && int.TryParse(parts[0], out int startNo) && int.TryParse(parts[1], out int endNo))
+                    else //BEST_CHALLENGE
                     {
-                        // 입력된 범위에 따라 여러 화 다운로드
-                        for (int no = startNo; no <= endNo; no++)
-                        {
-                            DownloadWebtoon(selectedWebtoon, no, pathB);
-                        }
+                        return $"베스트도전";
                     }
-                    else
-                    {
-                        MessageBox.Show("잘못된 화 범위입니다. 예: 1~8");
-                    }
-                }
-                else if (int.TryParse(noText, out int singleNo))
-                {
-                    // 단일 화 다운로드
-                    DownloadWebtoon(selectedWebtoon, singleNo, pathB);
-                }
-                else
-                {
-                    MessageBox.Show("잘못된 입력입니다. 숫자 또는 범위를 입력하세요. 예: 1 또는 1~8");
                 }
             }
         }
@@ -217,77 +108,23 @@ namespace WEBTOON
         private void DownloadWebtoon(searchList selectedWebtoon, int no, string PathB)
         {
             string url = $"https://comic.naver.com/webtoon/detail?titleId={selectedWebtoon.TitleId}&no={no}";
-            Save.Dir(PathB, selectedWebtoon.TitleName, no, url); // 경로, 제목, 화, URL
+            Dir.mkdir(PathB, selectedWebtoon.TitleName, no, url); // 경로, 제목, 화, URL
         }
 
-        /* public async Task GetImages(string pathA, string url)
+        public class Dir() // Directory 생성
         {
-            string downloadPath = pathA;
-            var httpClient = new HttpClient();
-            httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla");
-            var html = await httpClient.GetStringAsync(url);
-
-            var htmlDoc = new HtmlDocument();
-            htmlDoc.LoadHtml(html);
-
-            List<string> imageUrls = new List<string>();
-            List<string> downloadedImagePaths = new List<string>();
-
-            var comicViewArea = htmlDoc.DocumentNode.SelectSingleNode("//div[@id='comic_view_area']");
-
-            if (comicViewArea != null)
+            public static void mkdir(string userpath, string title, int no, string url) // 경로, 제목, 화, URL
             {
-                var imgNodes = comicViewArea.SelectNodes(".//img");
-
-                if (imgNodes != null)
-                {
-                    int imageIndex = 1;
-
-                    foreach (var imgNode in imgNodes)
-                    {
-                        string src = imgNode.GetAttributeValue("src", null);
-
-                        if (!string.IsNullOrEmpty(src) && !src.Contains("white"))
-                        {
-                            imageUrls.Add(src);
-                            Trace.WriteLine($"Found image: {src}");
-
-                            string fileName = $"{imageIndex}.jpg";
-                            string filePath = System.IO.Path.Combine(downloadPath, fileName);
-                            downloadedImagePaths.Add(filePath);
-
-                            try
-                            {
-                                byte[] imageBytes = await httpClient.GetByteArrayAsync(src);
-                                await File.WriteAllBytesAsync(filePath, imageBytes);
-                                imageIndex++;
-                            }
-                            catch (Exception ex)
-                            {
-                                MessageBox.Show($"Failed to download {src}: {ex.Message}");
-                            }
-                        }
-                        else
-                        {
-                            Trace.WriteLine($"Skipped image: {src} (contains 'white')");
-                        }
-                    }
-
-                    // 이미지 모두 다운로드 후 합치기
-                    if (downloadedImagePaths.Count > 0)
-                    {
-                        string outputFilePath = System.IO.Path.Combine(downloadPath, "combined.jpg");
-                        CombineImages(downloadedImagePaths.ToArray(), outputFilePath);
-                        MessageBox.Show($"모든 이미지를 합친 파일이 저장되었습니다: {outputFilePath}");
-                    }
-                }
+                string savepath = userpath + "\\" + title; // 예: C:\Users\Name\Desktop\유미의 세포들
+                DirectoryInfo directoryinfo = Directory.CreateDirectory(savepath);
+                MainWindow mainWindow = new MainWindow();
+                mainWindow.GetImages(savepath, url, no);
             }
-            MessageBox.Show("다운로드 완료");
         }
-        */
 
-        public async Task GetImages(string pathA, string url, int no)
+        public async Task GetImages(string savepath, string url, int no)
         {
+            //웹 요청
             var httpClient = new HttpClient();
             httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla");
             var html = await httpClient.GetStringAsync(url);
@@ -317,9 +154,9 @@ namespace WEBTOON
                             {
                                 // 이미지 데이터를 메모리로 다운로드
                                 byte[] imageBytes = await httpClient.GetByteArrayAsync(src);
-                                using (var ms = new MemoryStream(imageBytes))
+                                using (var memorystream = new MemoryStream(imageBytes))
                                 {
-                                    Bitmap bitmap = new Bitmap(ms);
+                                    Bitmap bitmap = new Bitmap(memorystream);
                                     images.Add(bitmap);
                                 }
                             }
@@ -337,15 +174,59 @@ namespace WEBTOON
                     // 이미지 결합 및 저장
                     if (images.Count > 0)
                     {
-                        string outputFilePath = System.IO.Path.Combine(pathA, $"{no}화.jpg");
+                        string outputFilePath = Path.Combine(savepath, $"{no}화.jpg");
                         CombineImages(images.ToArray(), outputFilePath);
                     }
                 }
             }
-            //MessageBox.Show("다운로드 완료");
+            else
+            {
+                MessageBox.Show("이미지를 다운로드할 수 없습니다.\n\n열람 시 로그인이 필요한 웹툰(유료 회차, 성인 웹툰 등)을 다운로드하려 했거나 존재하지 않는 화를 다운로드하려고 시도했을 가능성이 높습니다.");
+            }
         }
 
-        private void btnPath_Click(object sender, RoutedEventArgs e)
+        private void CombineImages(Bitmap[] images, string outputFilePath)
+        {
+            // 최종 이미지 크기 계산
+            int width = images.Max(img => img.Width); // 가장 넓은 이미지의 폭으로 설정
+            int height = images.Sum(img => img.Height); // 모든 이미지의 높이를 합산
+
+            // 새로운 비트맵 생성
+            using (var finalImage = new Bitmap(width, height))
+            {
+                using (Graphics graphics = Graphics.FromImage(finalImage))
+                {
+                    int offset = 0;
+                    foreach (var img in images)
+                    {
+                        graphics.DrawImage(img, new System.Drawing.Rectangle(0, offset, img.Width, img.Height));
+                        offset += img.Height;
+                    }
+                }
+            }
+
+            // 메모리 해제
+            foreach (var img in images)
+            {
+                img.Dispose();
+            }
+
+        }
+
+
+        // 이벤트
+        public void btnSearch_Click(object sender, RoutedEventArgs e) //필드 유효성 검사 후 Search()
+        {
+            if (string.IsNullOrWhiteSpace(tboxSearch.Text) || tboxSearch.Text == "제목/작가로 검색할 수 있습니다.")
+            {
+                MessageBox.Show("검색어를 입력해 주세요.");
+                return;
+            }
+            Search();
+
+        }
+
+        private void btnPath_Click(object sender, RoutedEventArgs e) //Path 설정
         {
             var dialog = new Microsoft.Win32.OpenFolderDialog();
             dialog.Title = "웹툰이 저장될 폴더를 선택하세요.";
@@ -353,9 +234,65 @@ namespace WEBTOON
             tboxPath.Text = dialog.FolderName;
         }
 
-        private void tboxSearch_GotFocus(object sender, RoutedEventArgs e)
+        private void tboxSearch_GotFocus(object sender, RoutedEventArgs e) //placeholder 구현
         {
             tboxSearch.Text = "";
+            
+        }
+
+        private void SearchListView_PreviewMouseDown(object sender, MouseButtonEventArgs e) //ListView 선택 구현
+        {
+            if (SearchListView.SelectedItem is searchList selectedWebtoon)
+            {
+                string noString = tboxNo.Text;
+                string path = tboxPath.Text;
+                if (string.IsNullOrWhiteSpace(noString)) // '저장할 화' 유효성 검사
+                {
+                    MessageBox.Show("저장할 화가 입력되어 있지 않습니다.");
+                    return;
+                }
+                if (path == "설정되지 않음") // '이미지가 저장될 경로' 유효성 검사
+                {
+                    MessageBox.Show("이미지를 저장할 경로가 설정되지 않았습니다.");
+                    return;
+                }
+
+                // 다중 다운로드 지원
+                if (noString.Contains("~"))
+                {
+                    var parts = noString.Split('~');
+                    if (parts.Length == 2 && int.TryParse(parts[0], out int startNo) && int.TryParse(parts[1], out int endNo))
+                    {
+                        // 입력된 범위에 따라 여러 화 다운로드
+                        for (int dlno = startNo; dlno <= endNo; dlno++)
+                        {
+                            DownloadWebtoon(selectedWebtoon, dlno, path);
+                        }
+                    }
+                    else
+                    {
+                        MessageBox.Show("잘못된 화 범위입니다. 올바른 입력의 예: 1~8");
+                    }
+                }
+                else if (int.TryParse(noString, out int singleNo))
+                {
+                    // 단일 화 다운로드
+                    DownloadWebtoon(selectedWebtoon, singleNo, path);
+                }
+                else
+                {
+                    MessageBox.Show("잘못된 입력입니다. 숫자 또는 범위를 입력하세요. 예: 1 또는 1~8");
+                }
+            }
+        }
+
+        private void tboxSearch_KeyUp(object sender, KeyEventArgs e)
+        {
+            if (e.Key != Key.Enter) return;
+
+            // your event handler here
+            e.Handled = true;
+            btnSearch_Click(sender, e);
         }
     }
 }
