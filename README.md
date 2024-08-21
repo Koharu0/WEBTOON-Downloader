@@ -3,7 +3,8 @@
 **WEBTOON - 네이버 웹툰 다운로더**는 네이버 웹툰의 이미지를 다운로드하는 애플리케이션입니다.<br>
 다운로드는 [이곳](https://github.com/Koharu0/WEBTOON/releases)에서 가능합니다.
 
-![image](https://github.com/user-attachments/assets/204607fb-1a7f-4ac5-a767-3c070fefb1fe)
+![image](https://github.com/user-attachments/assets/60b5f952-1f1a-4325-ac9a-3a3662f5863b)
+
 
 
 ## 주요 기능
@@ -19,5 +20,4 @@
 3. 자동으로 다운로드가 시작됩니다. 다운로드 완료 알림은 별도로 표시되지 않습니다.
 
 ## 지원하지 않는 기능
-- 현재 도전만화의 검색/다운로드를 지원하지 않습니다.
-- 작품 열람 시 로그인이 필요한 웹툰의 다운로드를 지원하지 않습니다.
+- 현재 작품 열람 시 로그인이 필요한 웹툰의 다운로드를 지원하지 않습니다.
