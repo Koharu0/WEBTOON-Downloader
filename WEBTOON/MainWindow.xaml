@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WEBTOON"
         mc:Ignorable="d"
-        Title="네이버 웹툰 다운로더 [dev]" Height="450" Width="800" Icon="/WEBTOON.ico" ResizeMode="NoResize">
+        Title="네이버 웹툰 다운로더 v1.2" Height="450" Width="800" Icon="/WEBTOON.ico" ResizeMode="NoResize">
     <Grid Background="#FF00DC64">
         <Button x:Name="btnSearch" Content="검색" HorizontalAlignment="Left" Margin="334,26,0,0" VerticalAlignment="Top" Click="btnSearch_Click"/>
         <TextBox x:Name="tboxSearch" HorizontalAlignment="Left" Margin="95,28,0,0" TextWrapping="Wrap" Text="제목/작가로 검색할 수 있습니다." VerticalAlignment="Top" Width="237" GotFocus="tboxSearch_GotFocus" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" InputMethod.PreferredImeState="On" InputMethod.PreferredImeConversionMode="Native" KeyUp="tboxSearch_KeyUp"/>
