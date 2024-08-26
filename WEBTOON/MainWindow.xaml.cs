@@ -111,19 +111,104 @@ namespace WEBTOON
             Dir.mkdir(PathB, selectedWebtoon.TitleName, no, url); // 경로, 제목, 화, URL
         }
 
-        public class Dir() // Directory 생성
+        public class Dir // Directory 생성
         {
             public static void mkdir(string userpath, string title, int no, string url) // 경로, 제목, 화, URL
             {
-                string savepath = userpath + "\\" + title; // 예: C:\Users\Name\Desktop\유미의 세포들
-                DirectoryInfo directoryinfo = Directory.CreateDirectory(savepath);
-                MainWindow mainWindow = new MainWindow();
-                mainWindow.GetImages(savepath, url, no);
+                // 현재 실행 중인 MainWindow 인스턴스에 접근
+                MainWindow mainWindow = Application.Current.MainWindow as MainWindow;
+
+                if (mainWindow != null) // MainWindow가 유효한지 확인
+                {
+                    if (mainWindow.chkSeparately.IsChecked == true)
+                    {
+                        string savepathS = userpath + "\\" + title + "\\" + no + "화"; // 예: C:\Users\Name\Desktop\유미의 세포들\n화
+                        DirectoryInfo directoryinfo = Directory.CreateDirectory(savepathS);
+
+                        MessageBox.Show("이미지 개별 다운로드를 시작합니다.");
+                        mainWindow.GetImagesS(savepathS, url, no);
+                    }
+                    else if (mainWindow.chkSeparately.IsChecked == false)
+                    {
+                        string savepathM = userpath + "\\" + title; // 예: C:\Users\Name\Desktop\유미의 세포들
+                        DirectoryInfo directoryinfo = Directory.CreateDirectory(savepathM);
+
+                        MessageBox.Show("이미지 다중 다운로드를 시작합니다.");
+                        mainWindow.GetImagesM(savepathM, url, no);
+                    }
+                }
+                else
+                {
+                    MessageBox.Show("MainWindow 인스턴스를 찾을 수 없습니다.");
+                }
             }
         }
 
-        public async Task GetImages(string savepath, string url, int no)
+        public async Task GetImagesS(string savepath, string url, int no)
         {
+            Trace.WriteLine("개별 다운로드 모드");
+            // 웹 요청
+            var httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla");
+            var html = await httpClient.GetStringAsync(url);
+
+            var htmlDoc = new HtmlDocument();
+            htmlDoc.LoadHtml(html);
+
+            var comicViewArea = htmlDoc.DocumentNode.SelectSingleNode("//div[@id='comic_view_area']");
+
+            if (comicViewArea != null)
+            {
+                var imgNodes = comicViewArea.SelectNodes(".//img");
+
+                if (imgNodes != null)
+                {
+                    int imageIndex = 1;  // 이미지 번호를 저장하기 위한 변수
+                    foreach (var imgNode in imgNodes)
+                    {
+                        string src = imgNode.GetAttributeValue("src", null);
+
+                        if (!string.IsNullOrEmpty(src) && !src.Contains("white"))
+                        {
+                            Trace.WriteLine($"Found image: {src}");
+
+                            try
+                            {
+                                // 이미지 데이터를 메모리로 다운로드
+                                byte[] imageBytes = await httpClient.GetByteArrayAsync(src);
+                                using (var memorystream = new MemoryStream(imageBytes))
+                                {
+                                    using (Bitmap bitmap = new Bitmap(memorystream))
+                                    {
+                                        // 개별 이미지 저장
+                                        string imageFilePath = Path.Combine(savepath, $"{imageIndex}.jpg");
+                                        bitmap.Save(imageFilePath, System.Drawing.Imaging.ImageFormat.Jpeg);
+                                        imageIndex++;
+                                    }
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                MessageBox.Show($"Failed to download {src}: {ex.Message}");
+
+                            }
+                        }
+                        else
+                        {
+                            Trace.WriteLine($"Skipped image: {src} (contains 'white')");
+                        }
+                    }
+                }
+            }
+            else
+            {
+                MessageBox.Show("이미지를 다운로드할 수 없습니다.\n\n열람 시 로그인이 필요한 웹툰(유료 회차, 성인 웹툰 등)을 다운로드하려 했거나 존재하지 않는 화를 다운로드하려고 시도했을 가능성이 높습니다.");
+            }
+        }
+
+        public async Task GetImagesM(string savepath, string url, int no)
+        {
+            Trace.WriteLine("다중 다운로드 모드");
             //웹 요청
             var httpClient = new HttpClient();
             httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla");
@@ -158,6 +243,7 @@ namespace WEBTOON
                                 {
                                     Bitmap bitmap = new Bitmap(memorystream);
                                     images.Add(bitmap);
+
                                 }
                             }
                             catch (Exception ex)
@@ -174,8 +260,21 @@ namespace WEBTOON
                     // 이미지 결합 및 저장
                     if (images.Count > 0)
                     {
-                        string outputFilePath = Path.Combine(savepath, $"{no}화.jpg");
-                        CombineImages(images.ToArray(), outputFilePath);
+                        try
+                        {
+                            string outputFilePath = Path.Combine(savepath, $"{no}화.jpg");
+                            CombineImages(images.ToArray(), outputFilePath);
+                        }
+                        catch
+                        {
+                            string outputFilePath = Path.Combine(savepath, $"{no}화.jpg");
+                            FileInfo fileInfo = new FileInfo(outputFilePath); //오류 확인
+                            if (fileInfo.Length == 0)
+                            {
+                                MessageBox.Show("오류가 발생했습니다.\n이미지가 너무 많아서 이미지 다중 다운로드에 실패했습니다.\n개별 다운로드를 진행해주세요.");
+                                File.Delete(outputFilePath);
+                            }
+                        }
                     }
                 }
             }
@@ -203,6 +302,8 @@ namespace WEBTOON
                         offset += img.Height;
                     }
                 }
+                //최종 이미지 저장
+                finalImage.Save(outputFilePath, System.Drawing.Imaging.ImageFormat.Jpeg);
             }
 
             // 메모리 해제
@@ -211,6 +312,11 @@ namespace WEBTOON
                 img.Dispose();
             }
 
+            FileInfo fileInfo = new FileInfo(outputFilePath); //오류 확인
+            if (fileInfo.Length == 0) 
+            {
+                MessageBox.Show("오류: 다중 저장에 실패하였습니다.\n개별 저장을 시도해주세요.");
+            }
         }
 
 
@@ -293,6 +399,13 @@ namespace WEBTOON
             // your event handler here
             e.Handled = true;
             btnSearch_Click(sender, e);
+        }
+        private void tboxPath_GotFocus(object sender, RoutedEventArgs e)
+        {
+            var dialog = new Microsoft.Win32.OpenFolderDialog();
+            dialog.Title = "웹툰이 저장될 폴더를 선택하세요.";
+            dialog.ShowDialog();
+            tboxPath.Text = dialog.FolderName;
         }
     }
 }

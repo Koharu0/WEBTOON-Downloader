@@ -55,10 +55,11 @@
 
 
         <TextBox x:Name="tboxNo" HorizontalAlignment="Left" Margin="71,273,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="65" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
-        <TextBox x:Name="tboxPath" HorizontalAlignment="Left" Margin="136,246,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="211" IsReadOnly="True" Text="설정되지 않음" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
+        <TextBox x:Name="tboxPath" HorizontalAlignment="Left" Margin="136,246,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="211" IsReadOnly="True" Text="설정되지 않음" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" GotFocus="tboxPath_GotFocus"/>
         <Label x:Name="labSearch" Content="검색" HorizontalAlignment="Left" Margin="56,24,0,0" VerticalAlignment="Top"/>
         <Label x:Name="labPath" Content="이미지가 저장될 경로" HorizontalAlignment="Left" Margin="11,242,0,0" VerticalAlignment="Top"/>
         <Button x:Name="btnPath" Content=" ⋯ " HorizontalAlignment="Left" Margin="352,245,0,0" VerticalAlignment="Top" Click="btnPath_Click"/>
         <Label Content="저장할 화" HorizontalAlignment="Left" Margin="10,268,0,0" VerticalAlignment="Top"/>
+        <CheckBox x:Name="chkSeparately" Content="이미지 개별 다운로드(체크 해제시 다중 다운로드)" HorizontalAlignment="Left" Margin="479,247,0,0" VerticalAlignment="Top" IsChecked="False"/>
     </Grid>
 </Window>
