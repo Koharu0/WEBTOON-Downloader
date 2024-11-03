@@ -1,6 +1,6 @@
-# WEBTOON - 네이버 웹툰 다운로더
+# WEBTOON-Downloader - 네이버 웹툰 다운로더
 
-**WEBTOON - 네이버 웹툰 다운로더**는 네이버 웹툰의 이미지를 다운로드하는 애플리케이션입니다.<br>
+**WEBTOON-Downloader - 네이버 웹툰 다운로더**는 네이버 웹툰의 이미지를 다운로드하는 애플리케이션입니다.<br>
 다운로드는 [이곳](https://github.com/Koharu0/WEBTOON/releases/download/v1.2/WEBTOON.zip)에서 가능합니다.
 
 ![image](https://github.com/user-attachments/assets/3c1e3e5d-8e57-413b-9c83-534266e1d7d7)
